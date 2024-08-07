@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python in Vectaria</title>
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.21.0/full/pyodide.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        #console { white-space: pre-wrap; background: #f0f0f0; padding: 10px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Python Vending Machine Simulation</h1>
+    <button onclick="displayInventory()">Display Inventory</button>
+    <button onclick="selectItem()">Select Item</button>
+    <button onclick="insertCoin()">Insert Coin</button>
+    <button onclick="dispenseItem()">Dispense Item</button>
+    <div id="console"></div>
+
+    <script>
+        async function loadPyodideAndPackages() {
+            const pyodide = await loadPyodide();
+            return pyodide;
+        }
+
+        let pyodide;
+        loadPyodideAndPackages().then(py => {
+            pyodide = py;
+            const code = `
+class VendingMachine:
+    def __init__(self):
+        self.inventory = {
+            "Soda": 10,
+            "Chips": 5,
+            "Candy": 7
+        }
+        self.balance = 0
+
+    def display_inventory(self):
+        return "\\n".join([f"{item}: {quantity}" for item, quantity in self.inventory.items()])
+
+    def select_item(self, item):
+        if item in self.inventory:
+            if self.inventory[item] > 0:
+                self.balance += 1
+                self.inventory[item] -= 1
+                return f"You selected {item}. Balance: ${self.balance}"
+            else:
+                return "Sorry, this item is out of stock."
+        else:
+            return "Invalid selection. Please try again."
+
+    def insert_coin(self, amount):
+        self.balance += amount
+        return f"Balance: ${self.balance}"
+
+    def dispense_item(self):
+        if self.balance > 0:
+            self.balance -= 1
+            return f"Dispensing item... Balance: ${self.balance}"
+        else:
+            return "Please insert a coin first."
+
+vending_machine = VendingMachine()
+`
+            pyodide.runPython(code);
+        });
+
+        async function runPythonFunction(functionName, arg = '') {
+            try {
+                const result = await pyodide.runPythonAsync(`vending_machine.${functionName}(${arg})`);
+                document.getElementById('console').innerText += result + '\\n';
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        function displayInventory() {
+            runPythonFunction('display_inventory');
+        }
+
+        function selectItem() {
+            const item = prompt('Enter the item you want to select:');
+            if (item) {
+                runPythonFunction('select_item', `"${item}"`);
+            }
+        }
+
+        function insertCoin() {
+            const amount = prompt('Enter the amount to insert:');
+            if (amount) {
+                runPythonFunction('insert_coin', amount);
+            }
+        }
+
+        function dispenseItem() {
+            runPythonFunction('dispense_item');
+        }
+    </script>
+</body>
+</html>
